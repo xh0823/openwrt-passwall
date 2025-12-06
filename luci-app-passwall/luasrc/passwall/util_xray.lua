@@ -172,14 +172,15 @@ function gen_outbound(flag, node, tag, proxy_table)
 						type = node.tcp_guise,
 						request = (node.tcp_guise == "http") and {
 							path = node.tcp_guise_http_path and (function()
-									local t, r = node.tcp_guise_http_path, {}
-									for _, v in ipairs(t) do
-										r[#r + 1] = (v == "" and "/" or v)
-									end
-									return r
-								end)() or {"/"},
+								local t, r = node.tcp_guise_http_path, {}
+								for _, v in ipairs(t) do
+									r[#r + 1] = (v == "" and "/" or v)
+								end
+								return r
+							end)() or {"/"},
 							headers = {
-								Host = node.tcp_guise_http_host or {}
+								Host = node.tcp_guise_http_host or {},
+								["User-Agent"] = node.user_agent and node.user_agent ~= "" and { node.user_agent } or nil
 							}
 						} or nil
 					}
@@ -201,6 +202,7 @@ function gen_outbound(flag, node, tag, proxy_table)
 				wsSettings = (node.transport == "ws") and {
 					path = node.ws_path or "/",
 					host = node.ws_host or nil,
+					headers = node.user_agent and node.user_agent ~= "" and { ["User-Agent"] = node.user_agent } or nil,
 					maxEarlyData = tonumber(node.ws_maxEarlyData) or nil,
 					earlyDataHeaderName = (node.ws_earlyDataHeaderName) and node.ws_earlyDataHeaderName or nil,
 					heartbeatPeriod = tonumber(node.ws_heartbeatPeriod) or nil
@@ -215,21 +217,23 @@ function gen_outbound(flag, node, tag, proxy_table)
 				} or nil,
 				httpupgradeSettings = (node.transport == "httpupgrade") and {
 					path = node.httpupgrade_path or "/",
-					host = node.httpupgrade_host
+					host = node.httpupgrade_host,
+					headers = node.user_agent and node.user_agent ~= "" and { ["User-Agent"] = node.user_agent } or nil
 				} or nil,
 				xhttpSettings = (node.transport == "xhttp") and {
 					mode = node.xhttp_mode or "auto",
 					path = node.xhttp_path or "/",
 					host = node.xhttp_host,
+					headers = node.user_agent and node.user_agent ~= "" and { ["User-Agent"] = node.user_agent } or nil,
 					-- 如果包含 "extra" 节，取 "extra" 内的内容，否则直接赋值给 extra
 					extra = node.xhttp_extra and (function()
-							local success, parsed = pcall(jsonc.parse, api.base64Decode(node.xhttp_extra))
-							if success then
-								return parsed.extra or parsed
-							else
-								return nil
-							end
-						end)() or nil
+						local success, parsed = pcall(jsonc.parse, api.base64Decode(node.xhttp_extra))
+						if success then
+							return parsed.extra or parsed
+						else
+							return nil
+						end
+					end)() or nil
 				} or nil,
 			} or nil,
 			settings = {
@@ -253,23 +257,24 @@ function gen_outbound(flag, node, tag, proxy_table)
 					}
 				} or nil,
 				servers = (node.protocol == "socks" or node.protocol == "http" or node.protocol == "shadowsocks" or node.protocol == "trojan") and {
-					{
-						address = node.address,
-						port = tonumber(node.port),
-						method = (node.method == "chacha20-ietf-poly1305" and "chacha20-poly1305") or
-							(node.method == "xchacha20-ietf-poly1305" and "xchacha20-poly1305") or
-							(node.method ~= "" and node.method) or nil,
-						ivCheck = (node.protocol == "shadowsocks") and node.iv_check == "1" or nil,
-						uot = (node.protocol == "shadowsocks") and node.uot == "1" or nil,
-						password = node.password or "",
-						users = (node.username and node.password) and {
-							{
-								user = node.username,
-								pass = node.password
-							}
-						} or nil
-					}
-				} or nil,
+						{
+							address = node.address,
+							port = tonumber(node.port),
+							method = (node.method == "chacha20-ietf-poly1305" and "chacha20-poly1305") or
+								(node.method == "xchacha20-ietf-poly1305" and "xchacha20-poly1305") or
+								(node.method ~= "" and node.method) or nil,
+							ivCheck = (node.protocol == "shadowsocks") and node.iv_check == "1" or nil,
+							uot = (node.protocol == "shadowsocks") and node.uot == "1" or nil,
+							password = node.password or "",
+							headers = (node.protocol == "http" and node.user_agent and node.user_agent ~= "") and { ["User-Agent"] = node.user_agent } or nil,
+							users = (node.username and node.password) and {
+								{
+									user = node.username,
+									pass = node.password
+								}
+							} or nil
+						}
+					} or nil,
 				address = (node.protocol == "wireguard" and node.wireguard_local_address) and node.wireguard_local_address or nil,
 				secretKey = (node.protocol == "wireguard") and node.wireguard_secret_key or nil,
 				peers = (node.protocol == "wireguard") and {
