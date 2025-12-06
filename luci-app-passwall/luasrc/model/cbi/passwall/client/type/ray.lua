@@ -382,6 +382,13 @@ o:depends({ [_n("tls")] = true, [_n("reality")] = false })
 o = s:option(Value, _n("tls_serverName"), translate("Domain"))
 o:depends({ [_n("tls")] = true })
 
+	o = s:option(Value, _n("user_agent"), translate("User-Agent"), translate("Custom User-Agent for HTTP/HTTPS requests."))
+o:depends({ [_n("transport")] = "raw", [_n("tcp_guise")] = "http" })
+o:depends({ [_n("transport")] = "ws" })
+o:depends({ [_n("transport")] = "httpupgrade" })
+o:depends({ [_n("transport")] = "xhttp" })
+o:depends({ [_n("protocol")] = "http" })
+
 o = s:option(Flag, _n("tls_allowInsecure"), translate("allowInsecure"), translate("Whether unsafe connections are allowed. When checked, Certificate validation will be skipped."))
 o.default = "0"
 o:depends({ [_n("tls")] = true, [_n("reality")] = false })
